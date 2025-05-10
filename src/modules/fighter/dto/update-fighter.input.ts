@@ -1,25 +1,20 @@
 import { InputType, Field } from '@nestjs/graphql';
 import { IsString, IsOptional } from 'class-validator';
+import { StatsInput } from './stats.input'; // Убедись, что путь правильный
 
 @InputType()
 export class UpdateFighterInput {
+  @Field({ nullable: true })
   @IsString()
   @IsOptional()
-  @Field({ nullable: true })
   name?: string;
 
+  @Field({ nullable: true })
   @IsString()
   @IsOptional()
-  @Field({ nullable: true })
   weight_class?: string;
 
+  @Field(() => StatsInput, { nullable: true }) 
   @IsOptional()
-  @Field({ nullable: true })
-  stats?: {
-    wins?: number;
-    losses?: number;
-    draws?: number;
-    knockouts?: number;
-    submissions?: number;
-  };
+  stats?: StatsInput;
 }

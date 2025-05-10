@@ -6,10 +6,10 @@ export class CreateEventInput {
   @IsString()
   @IsNotEmpty()
   @Field()
-  location: string;
+  location?: string;
 
   @IsDateString()
   @IsNotEmpty()
   @Field()
-  event_date: string;
+  event_date?: string;
 }

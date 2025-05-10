@@ -3,16 +3,16 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 @Entity('fighters')
 export class Fighter {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column()
-  weight_class: string;
+  weight_class!: string;
 
   @Column({ type: 'jsonb' })
-  stats: {
+  stats!: {
     wins: number;
     losses: number;
     draws: number;

@@ -1,25 +1,23 @@
+import { StatsInput } from './stats.input'; // Убедись, что путь правильный
 import { InputType, Field } from '@nestjs/graphql';
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 @InputType()
 export class CreateFighterInput {
+  @Field()
   @IsString()
   @IsNotEmpty()
-  @Field()
-  name: string;
+  name!: string;
 
+  @Field()
   @IsString()
   @IsNotEmpty()
-  @Field()
-  weight_class: string;
+  weight_class!: string;
 
+  @Field(() => StatsInput, { nullable: true })  
   @IsOptional()
-  @Field({ nullable: true })
-  stats?: {
-    wins?: number;
-    losses?: number;
-    draws?: number;
-    knockouts?: number;
-    submissions?: number;
-  };
+  @ValidateNested()
+  @Type(() => StatsInput)
+  stats?: StatsInput;
 }

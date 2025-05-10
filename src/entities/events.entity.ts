@@ -3,11 +3,11 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 @Entity('events')
 export class Event {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  location: string;
+  location!: string;
 
   @Column({ type: 'date' })
-  event_date: string;
+  event_date!: string;
 }

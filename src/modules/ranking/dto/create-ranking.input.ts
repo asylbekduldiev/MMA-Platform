@@ -6,15 +6,15 @@ export class CreateRankingInput {
   @IsInt()
   @IsNotEmpty()
   @Field()
-  fighter_id: number;
+  fighter_id?: number;
 
   @IsString()
   @IsNotEmpty()
   @Field()
-  weight_class: string;
+  weight_class?: string;
 
   @IsInt()
   @IsNotEmpty()
   @Field()
-  points: number;
+  points?: number;
 }

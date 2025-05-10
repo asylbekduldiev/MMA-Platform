@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import { Event } from '../../entities/events.entity';
 import { Fight } from '../../entities/fights.entity';
 import { CreateEventInput } from './dto/create-event.input';
@@ -24,14 +24,13 @@ export class EventService {
   async findUpcoming(): Promise<Event[]> {
     const today = new Date().toISOString().split('T')[0];
     return this.eventRepository.find({
-      where: { event_date: '>= :date' },
-      params: { date: today },
+      where: { event_date: MoreThanOrEqual(today) }
     });
   }
 
   async getFightCard(id: number): Promise<Fight[]> {
     return this.fightRepository.find({
-      where: { event_id: id },
+      where: { event: { id } },
       relations: ['fighter1', 'fighter2'],
     });
   }

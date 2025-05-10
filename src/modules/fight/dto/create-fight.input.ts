@@ -6,17 +6,17 @@ export class CreateFightInput {
   @IsInt()
   @IsNotEmpty()
   @Field()
-  event_id: number;
+  event_id?: number;
 
   @IsInt()
   @IsNotEmpty()
   @Field()
-  fighter1_id: number;
+  fighter1_id?: number;
 
   @IsInt()
   @IsNotEmpty()
   @Field()
-  fighter2_id: number;
+  fighter2_id?: number;
 
   @IsInt()
   @IsOptional()
@@ -26,5 +26,5 @@ export class CreateFightInput {
   @IsString()
   @IsNotEmpty()
   @Field()
-  result_method: string;
+  result_method?: string;
 }

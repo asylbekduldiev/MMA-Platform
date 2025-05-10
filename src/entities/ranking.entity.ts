@@ -10,18 +10,18 @@ import { Fighter } from './fighter.entity';
 @Entity('rankings')
 export class Ranking {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  fighter_id: number;
+  fighter_id!: number;
 
   @ManyToOne(() => Fighter, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'fighter_id' })
-  fighter: Fighter;
+  fighter!: Fighter;
 
   @Column()
-  weight_class: string;
+  weight_class!: string;
 
   @Column({ default: 0 })
-  points: number;
+  points!: number;
 }

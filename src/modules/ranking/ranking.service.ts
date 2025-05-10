@@ -27,30 +27,30 @@ export class RankingService {
   }
 
   async updateRankings(): Promise<void> {
-    // Получаем все последние бои
+    // get all last fights
     const fights = await this.fightRepository.find({
       relations: ['fighter1', 'fighter2', 'winner'],
     });
 
-    // Обновляем статистику бойцов
+    // update fighter stats
     for (const fight of fights) {
-      if (fight.winner_id) {
+      if (fight.winner?.id) {
         const winner = await this.fighterRepository.findOneOrFail({
-          where: { id: fight.winner_id },
+          where: { id: fight.winner?.id },
         });
         const loser =
-          fight.fighter1_id === fight.winner_id
+            fight.winner?.id === fight.winner?.id
             ? await this.fighterRepository.findOneOrFail({
-                where: { id: fight.fighter2_id },
+                where: { id: fight.winner?.id },
               })
             : await this.fighterRepository.findOneOrFail({
-                where: { id: fight.fighter1_id },
+                where: { id: fight.winner?.id },
               });
 
         const winnerStats = winner.stats;
         const loserStats = loser.stats;
 
-        // Обновляем статистику победителя
+        // update fighter stats
         const points =
           (winnerStats.wins || 0) *
           (fight.result_method === 'KO' || fight.result_method === 'SUBMISSION'
@@ -63,11 +63,11 @@ export class RankingService {
           winnerStats.submissions = (winnerStats.submissions || 0) + 1;
         await this.fighterRepository.update(winner.id, { stats: winnerStats });
 
-        // Обновляем статистику проигравшего
+        // update loser stats
         loserStats.losses = (loserStats.losses || 0) + 1;
         await this.fighterRepository.update(loser.id, { stats: loserStats });
 
-        // Обновляем рейтинг
+        // update rankings
         let ranking = await this.rankingRepository.findOne({
           where: { fighter_id: winner.id, weight_class: winner.weight_class },
         });
@@ -96,12 +96,12 @@ export class RankingService {
         }
         await this.rankingRepository.save(ranking);
       } else {
-        // Ничья
+        // draw
         const fighter1 = await this.fighterRepository.findOneOrFail({
-          where: { id: fight.fighter1_id },
+          where: { id: fight.winner?.id },
         });
         const fighter2 = await this.fighterRepository.findOneOrFail({
-          where: { id: fight.fighter2_id },
+          where: { id: fight.winner?.id },
         });
 
         let ranking1 = await this.rankingRepository.findOne({
@@ -148,25 +148,25 @@ export class RankingService {
     }
   }
 
-  // Фоновое обновление рейтинга после создания/обновления боя
+  // background update rankings
   async triggerRankingUpdate(fightId: number): Promise<void> {
-    // Симуляция фонового выполнения
+    // simulate async operation
     await setTimeout(0);
     const fight = await this.fightRepository.findOneOrFail({
       where: { id: fightId },
       relations: ['fighter1', 'fighter2', 'winner'],
     });
-    if (fight.winner_id) {
+    if (fight.winner?.id) {
       const winner = await this.fighterRepository.findOneOrFail({
-        where: { id: fight.winner_id },
+        where: { id: fight.winner?.id },
       });
       const loser =
-        fight.fighter1_id === fight.winner_id
+        fight.winner?.id === fight.winner?.id
           ? await this.fighterRepository.findOneOrFail({
-              where: { id: fight.fighter2_id },
+              where: { id: fight.winner?.id },
             })
           : await this.fighterRepository.findOneOrFail({
-              where: { id: fight.fighter1_id },
+              where: { id: fight.winner?.id },
             });
 
       let ranking = await this.rankingRepository.findOne({
@@ -198,10 +198,10 @@ export class RankingService {
       await this.rankingRepository.save(ranking);
     } else {
       const fighter1 = await this.fighterRepository.findOneOrFail({
-        where: { id: fight.fighter1_id },
+        where: { id: fight.winner?.id },
       });
       const fighter2 = await this.fighterRepository.findOneOrFail({
-        where: { id: fight.fighter2_id },
+        where: { id: fight.winner?.id },
       });
 
       let ranking1 = await this.rankingRepository.findOne({

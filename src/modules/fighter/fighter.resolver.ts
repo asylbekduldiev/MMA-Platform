@@ -1,40 +1,42 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { FighterService } from './fighter.service';
-import { Fighter } from '../../entities/fighter.entity';
 import { CreateFighterInput } from './dto/create-fighter.input';
 import { UpdateFighterInput } from './dto/update-fighter.input';
 import { Fight } from 'src/entities/fights.entity';
+import { FighterType } from '../../types/fighter.type'; // 👈 добавлен правильный тип
 
-@Resolver(() => Fighter)
+@Resolver(() => FighterType)
 export class FighterResolver {
   constructor(private readonly fighterService: FighterService) {}
 
-  @Query(() => [Fighter], { name: 'fighters' })
+  @Query(() => [FighterType], { name: 'fighters' })
   async findAll() {
     return this.fighterService.findAll();
   }
 
-  @Query(() => Fighter, { name: 'fighter' })
+  @Query(() => FighterType, { name: 'fighter' })
   async findOne(@Args('id', { type: () => Number }) id: number) {
     return this.fighterService.findOne(id);
   }
 
-  @Query(() => [Fighter], { name: 'fightersByWeightClass' })
+  @Query(() => [FighterType], { name: 'fightersByWeightClass' })
   async findByWeightClass(
     @Args('weightClass', { type: () => String }) weightClass: string,
   ) {
     return this.fighterService.findByWeightClass(weightClass);
   }
 
-  @Mutation(() => Fighter, { name: 'createFighter' })
-  async create(@Args('input') input: CreateFighterInput) {
+  @Mutation(() => FighterType, { name: 'createFighter' })
+  async create(
+    @Args('input', { type: () => CreateFighterInput }) input: CreateFighterInput,
+  ) {
     return this.fighterService.create(input);
   }
 
-  @Mutation(() => Fighter, { name: 'updateFighter' })
+  @Mutation(() => FighterType, { name: 'updateFighter' })
   async update(
     @Args('id', { type: () => Number }) id: number,
-    @Args('input') input: UpdateFighterInput,
+    @Args('input', { type: () => UpdateFighterInput }) input: UpdateFighterInput,
   ) {
     return this.fighterService.update(id, input);
   }
@@ -44,7 +46,7 @@ export class FighterResolver {
     return this.fighterService.remove(id);
   }
 
-  @Query(() => Fighter, { name: 'fighterStats' })
+  @Query(() => FighterType, { name: 'fighterStats' })
   async getStats(@Args('id', { type: () => Number }) id: number) {
     return this.fighterService.getStats(id);
   }
