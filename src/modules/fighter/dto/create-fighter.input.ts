@@ -3,18 +3,18 @@ import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 @InputType()
 export class CreateFighterInput {
-  @Field()
   @IsString()
   @IsNotEmpty()
+  @Field()
   name: string;
 
-  @Field()
   @IsString()
   @IsNotEmpty()
+  @Field()
   weight_class: string;
 
-  @Field({ nullable: true })
   @IsOptional()
+  @Field({ nullable: true })
   stats?: {
     wins?: number;
     losses?: number;

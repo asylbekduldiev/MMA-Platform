@@ -1,0 +1,234 @@
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Ranking } from '../../entities/ranking.entity';
+import { Fighter } from '../../entities/fighter.entity';
+import { Fight } from '../../entities/fights.entity';
+import { setTimeout } from 'timers/promises';
+
+@Injectable()
+export class RankingService {
+  constructor(
+    @InjectRepository(Ranking) private rankingRepository: Repository<Ranking>,
+    @InjectRepository(Fighter) private fighterRepository: Repository<Fighter>,
+    @InjectRepository(Fight) private fightRepository: Repository<Fight>,
+  ) {}
+
+  async findAll(): Promise<Ranking[]> {
+    return this.rankingRepository.find({ relations: ['fighter'] });
+  }
+
+  async findByWeightClass(weightClass: string): Promise<Ranking[]> {
+    return this.rankingRepository.find({
+      where: { weight_class: weightClass },
+      relations: ['fighter'],
+      order: { points: 'DESC' },
+    });
+  }
+
+  async updateRankings(): Promise<void> {
+    // Получаем все последние бои
+    const fights = await this.fightRepository.find({
+      relations: ['fighter1', 'fighter2', 'winner'],
+    });
+
+    // Обновляем статистику бойцов
+    for (const fight of fights) {
+      if (fight.winner_id) {
+        const winner = await this.fighterRepository.findOneOrFail({
+          where: { id: fight.winner_id },
+        });
+        const loser =
+          fight.fighter1_id === fight.winner_id
+            ? await this.fighterRepository.findOneOrFail({
+                where: { id: fight.fighter2_id },
+              })
+            : await this.fighterRepository.findOneOrFail({
+                where: { id: fight.fighter1_id },
+              });
+
+        const winnerStats = winner.stats;
+        const loserStats = loser.stats;
+
+        // Обновляем статистику победителя
+        const points =
+          (winnerStats.wins || 0) *
+          (fight.result_method === 'KO' || fight.result_method === 'SUBMISSION'
+            ? 4
+            : 3);
+        winnerStats.wins = (winnerStats.wins || 0) + 1;
+        if (fight.result_method === 'KO')
+          winnerStats.knockouts = (winnerStats.knockouts || 0) + 1;
+        if (fight.result_method === 'SUBMISSION')
+          winnerStats.submissions = (winnerStats.submissions || 0) + 1;
+        await this.fighterRepository.update(winner.id, { stats: winnerStats });
+
+        // Обновляем статистику проигравшего
+        loserStats.losses = (loserStats.losses || 0) + 1;
+        await this.fighterRepository.update(loser.id, { stats: loserStats });
+
+        // Обновляем рейтинг
+        let ranking = await this.rankingRepository.findOne({
+          where: { fighter_id: winner.id, weight_class: winner.weight_class },
+        });
+        if (!ranking) {
+          ranking = this.rankingRepository.create({
+            fighter_id: winner.id,
+            weight_class: winner.weight_class,
+            points: 0,
+          });
+        }
+        ranking.points +=
+          fight.result_method === 'KO' || fight.result_method === 'SUBMISSION'
+            ? 4
+            : 3;
+        await this.rankingRepository.save(ranking);
+
+        ranking = await this.rankingRepository.findOne({
+          where: { fighter_id: loser.id, weight_class: loser.weight_class },
+        });
+        if (!ranking) {
+          ranking = this.rankingRepository.create({
+            fighter_id: loser.id,
+            weight_class: loser.weight_class,
+            points: 0,
+          });
+        }
+        await this.rankingRepository.save(ranking);
+      } else {
+        // Ничья
+        const fighter1 = await this.fighterRepository.findOneOrFail({
+          where: { id: fight.fighter1_id },
+        });
+        const fighter2 = await this.fighterRepository.findOneOrFail({
+          where: { id: fight.fighter2_id },
+        });
+
+        let ranking1 = await this.rankingRepository.findOne({
+          where: {
+            fighter_id: fighter1.id,
+            weight_class: fighter1.weight_class,
+          },
+        });
+        if (!ranking1) {
+          ranking1 = this.rankingRepository.create({
+            fighter_id: fighter1.id,
+            weight_class: fighter1.weight_class,
+            points: 0,
+          });
+        }
+        ranking1.points += 1;
+        await this.rankingRepository.save(ranking1);
+
+        let ranking2 = await this.rankingRepository.findOne({
+          where: {
+            fighter_id: fighter2.id,
+            weight_class: fighter2.weight_class,
+          },
+        });
+        if (!ranking2) {
+          ranking2 = this.rankingRepository.create({
+            fighter_id: fighter2.id,
+            weight_class: fighter2.weight_class,
+            points: 0,
+          });
+        }
+        ranking2.points += 1;
+        await this.rankingRepository.save(ranking2);
+
+        fighter1.stats.draws = (fighter1.stats.draws || 0) + 1;
+        fighter2.stats.draws = (fighter2.stats.draws || 0) + 1;
+        await this.fighterRepository.update(fighter1.id, {
+          stats: fighter1.stats,
+        });
+        await this.fighterRepository.update(fighter2.id, {
+          stats: fighter2.stats,
+        });
+      }
+    }
+  }
+
+  // Фоновое обновление рейтинга после создания/обновления боя
+  async triggerRankingUpdate(fightId: number): Promise<void> {
+    // Симуляция фонового выполнения
+    await setTimeout(0);
+    const fight = await this.fightRepository.findOneOrFail({
+      where: { id: fightId },
+      relations: ['fighter1', 'fighter2', 'winner'],
+    });
+    if (fight.winner_id) {
+      const winner = await this.fighterRepository.findOneOrFail({
+        where: { id: fight.winner_id },
+      });
+      const loser =
+        fight.fighter1_id === fight.winner_id
+          ? await this.fighterRepository.findOneOrFail({
+              where: { id: fight.fighter2_id },
+            })
+          : await this.fighterRepository.findOneOrFail({
+              where: { id: fight.fighter1_id },
+            });
+
+      let ranking = await this.rankingRepository.findOne({
+        where: { fighter_id: winner.id, weight_class: winner.weight_class },
+      });
+      if (!ranking) {
+        ranking = this.rankingRepository.create({
+          fighter_id: winner.id,
+          weight_class: winner.weight_class,
+          points: 0,
+        });
+      }
+      ranking.points +=
+        fight.result_method === 'KO' || fight.result_method === 'SUBMISSION'
+          ? 4
+          : 3;
+      await this.rankingRepository.save(ranking);
+
+      ranking = await this.rankingRepository.findOne({
+        where: { fighter_id: loser.id, weight_class: loser.weight_class },
+      });
+      if (!ranking) {
+        ranking = this.rankingRepository.create({
+          fighter_id: loser.id,
+          weight_class: loser.weight_class,
+          points: 0,
+        });
+      }
+      await this.rankingRepository.save(ranking);
+    } else {
+      const fighter1 = await this.fighterRepository.findOneOrFail({
+        where: { id: fight.fighter1_id },
+      });
+      const fighter2 = await this.fighterRepository.findOneOrFail({
+        where: { id: fight.fighter2_id },
+      });
+
+      let ranking1 = await this.rankingRepository.findOne({
+        where: { fighter_id: fighter1.id, weight_class: fighter1.weight_class },
+      });
+      if (!ranking1) {
+        ranking1 = this.rankingRepository.create({
+          fighter_id: fighter1.id,
+          weight_class: fighter1.weight_class,
+          points: 0,
+        });
+      }
+      ranking1.points += 1;
+      await this.rankingRepository.save(ranking1);
+
+      let ranking2 = await this.rankingRepository.findOne({
+        where: { fighter_id: fighter2.id, weight_class: fighter2.weight_class },
+      });
+      if (!ranking2) {
+        ranking2 = this.rankingRepository.create({
+          fighter_id: fighter2.id,
+          weight_class: fighter2.weight_class,
+          points: 0,
+        });
+      }
+      ranking2.points += 1;
+      await this.rankingRepository.save(ranking2);
+    }
+  }
+}

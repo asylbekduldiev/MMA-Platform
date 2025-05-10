@@ -1,8 +1,8 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { FighterService } from './fighter.service';
 import { Fighter } from '../../entities/fighter.entity';
-import { CreateFighterInput } from '../dto/create-fighter.input';
-import { UpdateFighterInput } from '../dto/update-fighter.input';
+import { CreateFighterInput } from './dto/create-fighter.input';
+import { UpdateFighterInput } from './dto/update-fighter.input';
 import { Fight } from 'src/entities/fights.entity';
 
 @Resolver(() => Fighter)

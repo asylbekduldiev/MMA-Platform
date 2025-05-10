@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Fighter } from '../../entities/fighter.entity';
 import { Fight } from '../../entities/fights.entity';
-import { CreateFighterInput } from '../dto/create-fighter.input';
-import { UpdateFighterInput } from '../dto/update-fighter.input';
+import { CreateFighterInput } from './dto/create-fighter.input';
+import { UpdateFighterInput } from './dto/update-fighter.input';
 
 @Injectable()
 export class FighterService {
