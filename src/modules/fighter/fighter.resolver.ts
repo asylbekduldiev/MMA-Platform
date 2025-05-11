@@ -2,7 +2,7 @@ import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { FighterService } from './fighter.service';
 import { CreateFighterInput } from './dto/create-fighter.input';
 import { UpdateFighterInput } from './dto/update-fighter.input';
-import { Fight } from 'src/entities/fights.entity';
+import { FightType } from '../../types/fight.type';
 import { FighterType } from '../../types/fighter.type'; // 👈 добавлен правильный тип
 
 @Resolver(() => FighterType)
@@ -51,7 +51,7 @@ export class FighterResolver {
     return this.fighterService.getStats(id);
   }
 
-  @Query(() => [Fight], { name: 'fighterHistory' })
+  @Query(() => [FightType], { name: 'fighterHistory' })
   async getFightHistory(@Args('id', { type: () => Number }) id: number) {
     return this.fighterService.getFightHistory(id);
   }

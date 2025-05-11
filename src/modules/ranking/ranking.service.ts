@@ -5,6 +5,8 @@ import { Ranking } from '../../entities/ranking.entity';
 import { Fighter } from '../../entities/fighter.entity';
 import { Fight } from '../../entities/fights.entity';
 import { setTimeout } from 'timers/promises';
+import { RankingType } from '../../types/ranking.type';
+import { FighterType } from '../../types/fighter.type';
 
 @Injectable()
 export class RankingService {
@@ -14,16 +16,41 @@ export class RankingService {
     @InjectRepository(Fight) private fightRepository: Repository<Fight>,
   ) {}
 
-  async findAll(): Promise<Ranking[]> {
-    return this.rankingRepository.find({ relations: ['fighter'] });
+  async findAll(): Promise<RankingType[]> {
+    const rankings = await this.rankingRepository.find({ relations: ['fighter'] });
+    return rankings.map(ranking => this.mapToRankingType(ranking));
   }
 
-  async findByWeightClass(weightClass: string): Promise<Ranking[]> {
-    return this.rankingRepository.find({
+  async findByWeightClass(weightClass: string): Promise<RankingType[]> {
+    const rankings = await this.rankingRepository.find({
       where: { weight_class: weightClass },
       relations: ['fighter'],
       order: { points: 'DESC' },
     });
+    return rankings.map(ranking => this.mapToRankingType(ranking));
+  }
+
+  private mapToRankingType(ranking: Ranking): RankingType {
+    const fighterType: FighterType | undefined = ranking.fighter ? {
+      id: ranking.fighter.id,
+      name: ranking.fighter.name,
+      weight_class: ranking.fighter.weight_class,
+      stats: {
+        wins: ranking.fighter.stats.wins || 0,
+        losses: ranking.fighter.stats.losses || 0,
+        draws: ranking.fighter.stats.draws || 0,
+        knockouts: ranking.fighter.stats.knockouts || 0,
+        submissions: ranking.fighter.stats.submissions || 0
+      }
+    } : undefined;
+
+    return {
+      id: ranking.id,
+      fighter_id: ranking.fighter_id,
+      fighter: fighterType,
+      weight_class: ranking.weight_class,
+      points: ranking.points
+    };
   }
 
   async updateRankings(): Promise<void> {

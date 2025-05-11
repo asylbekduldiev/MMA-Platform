@@ -1,17 +1,18 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { RankingService } from './ranking.service';
 import { Ranking } from '../../entities/ranking.entity';
+import { RankingType } from '../../types/ranking.type';
 
-@Resolver(() => Ranking)
+@Resolver(() => RankingType)
 export class RankingResolver {
   constructor(private readonly rankingService: RankingService) {}
 
-  @Query(() => [Ranking], { name: 'rankings' })
+  @Query(() => [RankingType], { name: 'rankings' })
   async findAll() {
     return this.rankingService.findAll();
   }
 
-  @Query(() => [Ranking], { name: 'rankingsByWeightClass' })
+  @Query(() => [RankingType], { name: 'rankingsByWeightClass' })
   async findByWeightClass(
     @Args('weightClass', { type: () => String }) weightClass: string,
   ) {

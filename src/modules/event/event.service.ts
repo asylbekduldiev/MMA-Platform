@@ -5,6 +5,8 @@ import { Event } from '../../entities/events.entity';
 import { Fight } from '../../entities/fights.entity';
 import { CreateEventInput } from './dto/create-event.input';
 import { UpdateEventInput } from './dto/update-event.input';
+import { EventType } from '../../types/event.type';
+import { FightType } from '../../types/fight.type';
 
 @Injectable()
 export class EventService {
@@ -13,36 +15,61 @@ export class EventService {
     @InjectRepository(Fight) private fightRepository: Repository<Fight>,
   ) {}
 
-  async findAll(): Promise<Event[]> {
-    return this.eventRepository.find();
+  async findAll(): Promise<EventType[]> {
+    const events = await this.eventRepository.find();
+    return events.map(event => this.mapToEventType(event));
   }
 
-  async findOne(id: number): Promise<Event> {
-    return this.eventRepository.findOneOrFail({ where: { id } });
+  async findOne(id: number): Promise<EventType> {
+    const event = await this.eventRepository.findOneOrFail({ where: { id } });
+    return this.mapToEventType(event);
   }
 
-  async findUpcoming(): Promise<Event[]> {
+  async findUpcoming(): Promise<EventType[]> {
     const today = new Date().toISOString().split('T')[0];
-    return this.eventRepository.find({
+    const events = await this.eventRepository.find({
       where: { event_date: MoreThanOrEqual(today) }
     });
+    return events.map(event => this.mapToEventType(event));
   }
 
-  async getFightCard(id: number): Promise<Fight[]> {
-    return this.fightRepository.find({
+  async getFightCard(id: number): Promise<FightType[]> {
+    const fights = await this.fightRepository.find({
       where: { event: { id } },
-      relations: ['fighter1', 'fighter2'],
+      relations: ['fighter1', 'fighter2', 'event', 'winner'],
     });
+    return fights.map(fight => this.mapToFightType(fight));
   }
 
-  async create(input: CreateEventInput): Promise<Event> {
+  private mapToFightType(fight: Fight): FightType {
+    return {
+      id: fight.id,
+      event_id: fight.event?.id,
+      fighter1_id: fight.fighter1?.id,
+      fighter2_id: fight.fighter2?.id,
+      winner_id: fight.winner?.id,
+      result_method: fight.result_method
+    };
+  }
+
+  async create(input: CreateEventInput): Promise<EventType> {
     const event = this.eventRepository.create(input);
-    return this.eventRepository.save(event);
+    const savedEvent = await this.eventRepository.save(event);
+    return this.mapToEventType(savedEvent);
   }
 
-  async update(id: number, input: UpdateEventInput): Promise<Event> {
+  async update(id: number, input: UpdateEventInput): Promise<EventType> {
     await this.eventRepository.update(id, input);
-    return this.eventRepository.findOneOrFail({ where: { id } });
+    const updatedEvent = await this.eventRepository.findOneOrFail({ where: { id } });
+    return this.mapToEventType(updatedEvent);
+  }
+  
+  private mapToEventType(event: Event): EventType {
+    return {
+      id: event.id,
+      location: event.location,
+      event_date: event.event_date
+    };
   }
 
   async remove(id: number): Promise<boolean> {

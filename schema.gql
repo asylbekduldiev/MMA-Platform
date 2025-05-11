@@ -1,0 +1,116 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input CreateEventInput {
+  event_date: String!
+  location: String!
+}
+
+input CreateFightInput {
+  event_id: Float!
+  fighter1_id: Float!
+  fighter2_id: Float!
+  result_method: String!
+  winner_id: Float
+}
+
+input CreateFighterInput {
+  name: String!
+  stats: StatsInput
+  weight_class: String!
+}
+
+type EventType {
+  event_date: String!
+  id: Int!
+  location: String!
+}
+
+type FightType {
+  event_id: Int!
+  fighter1_id: Int!
+  fighter2_id: Int!
+  id: Int!
+  result_method: String!
+  winner_id: Int
+}
+
+type FighterType {
+  id: Int!
+  name: String!
+  stats: StatsOutput!
+  weight_class: String!
+}
+
+type Mutation {
+  createEvent(input: CreateEventInput!): EventType!
+  createFight(input: CreateFightInput!): FightType!
+  createFighter(input: CreateFighterInput!): FighterType!
+  deleteEvent(id: Float!): Boolean!
+  deleteFight(id: Float!): Boolean!
+  deleteFighter(id: Float!): Boolean!
+  updateEvent(id: Float!, input: UpdateEventInput!): EventType!
+  updateFight(id: Float!, input: UpdateFightInput!): FightType!
+  updateFighter(id: Float!, input: UpdateFighterInput!): FighterType!
+  updateRankings: Boolean!
+}
+
+type Query {
+  event(id: Float!): EventType!
+  eventFightCard(id: Float!): [FightType!]!
+  events: [EventType!]!
+  fight(id: Float!): FightType!
+  fighter(id: Float!): FighterType!
+  fighterHistory(id: Float!): [FightType!]!
+  fighterStats(id: Float!): FighterType!
+  fighters: [FighterType!]!
+  fightersByWeightClass(weightClass: String!): [FighterType!]!
+  fights: [FightType!]!
+  rankings: [RankingType!]!
+  rankingsByWeightClass(weightClass: String!): [RankingType!]!
+  upcomingEvents: [EventType!]!
+}
+
+type RankingType {
+  fighter: FighterType
+  fighter_id: Int!
+  id: Int!
+  points: Int!
+  weight_class: String!
+}
+
+input StatsInput {
+  draws: Int
+  knockouts: Int
+  losses: Int
+  submissions: Int
+  wins: Int
+}
+
+type StatsOutput {
+  draws: Int!
+  knockouts: Int!
+  losses: Int!
+  submissions: Int!
+  wins: Int!
+}
+
+input UpdateEventInput {
+  event_date: String
+  location: String
+}
+
+input UpdateFightInput {
+  event_id: Float
+  fighter1_id: Float
+  fighter2_id: Float
+  result_method: String
+  winner_id: Float
+}
+
+input UpdateFighterInput {
+  name: String
+  stats: StatsInput
+  weight_class: String
+}

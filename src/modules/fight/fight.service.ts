@@ -6,6 +6,7 @@ import { Fighter } from '../../entities/fighter.entity';
 import { Event } from '../../entities/events.entity';
 import { CreateFightInput } from './dto/create-fight.input';
 import { UpdateFightInput } from './dto/update-fight.input';
+import { FightType } from 'src/types/fight.type'; // Импортируем правильный тип
 
 @Injectable()
 export class FightService {
@@ -15,69 +16,76 @@ export class FightService {
     @InjectRepository(Event) private eventRepository: Repository<Event>,
   ) {}
 
-  async findAll(): Promise<Fight[]> {
-    return this.fightRepository.find({
+  async findAll(): Promise<FightType[]> {
+    const fights = await this.fightRepository.find({
       relations: ['event', 'fighter1', 'fighter2', 'winner'],
     });
+    return fights.map(fight => this.mapToFightType(fight)); // Преобразуем каждый fight в FightType
   }
 
-  async findOne(id: number): Promise<Fight> {
-    return this.fightRepository.findOneOrFail({
+  async findOne(id: number): Promise<FightType> {
+    const fight = await this.fightRepository.findOneOrFail({
       where: { id },
       relations: ['event', 'fighter1', 'fighter2', 'winner'],
     });
+    return this.mapToFightType(fight);
   }
 
-  async create(input: CreateFightInput): Promise<Fight> {
-    // Проверка существования события и бойцов
-    await this.eventRepository.findOneOrFail({ where: { id: input.event_id } });
-    await this.fighterRepository.findOneOrFail({
-      where: { id: input.fighter1_id },
-    });
-    await this.fighterRepository.findOneOrFail({
-      where: { id: input.fighter2_id },
-    });
-    if (input.winner_id) {
-      await this.fighterRepository.findOneOrFail({
-        where: { id: input.winner_id },
-      });
-    }
+  async create(input: CreateFightInput): Promise<FightType> {
+    const event = await this.eventRepository.findOneOrFail({ where: { id: input.event_id } });
+    const fighter1 = await this.fighterRepository.findOneOrFail({ where: { id: input.fighter1_id } });
+    const fighter2 = await this.fighterRepository.findOneOrFail({ where: { id: input.fighter2_id } });
+    const winner = input.winner_id ? await this.fighterRepository.findOneOrFail({ where: { id: input.winner_id } }) : null;
 
-    const fight = this.fightRepository.create(input);
-    return this.fightRepository.save(fight);
+    const fight = this.fightRepository.create({
+      event,
+      fighter1,
+      fighter2,
+      ...(winner && { winner }),
+      result_method: input.result_method,
+    });
+
+    const savedFight = await this.fightRepository.save(fight);
+
+    return this.mapToFightType(savedFight);
   }
 
-  async update(id: number, input: UpdateFightInput): Promise<Fight> {
+  private mapToFightType(fight: Fight): FightType {
+    return {
+      id: fight.id,
+      event_id: fight.event.id,
+      fighter1_id: fight.fighter1.id,
+      fighter2_id: fight.fighter2.id,
+      winner_id: fight.winner?.id,
+      result_method: fight.result_method,
+    };
+  }
+
+  async update(id: number, input: UpdateFightInput): Promise<FightType> {
     // CHeck existence of the fight
-    await this.fightRepository.findOneOrFail({ where: { id } });
+    const fight = await this.fightRepository.findOneOrFail({ where: { id } });
 
     // CHeck existence of the event and fighters
     if (input.event_id) {
-      await this.eventRepository.findOneOrFail({
-        where: { id: input.event_id },
-      });
+      await this.eventRepository.findOneOrFail({ where: { id: input.event_id } });
     }
     if (input.fighter1_id) {
-      await this.fighterRepository.findOneOrFail({
-        where: { id: input.fighter1_id },
-      });
+      await this.fighterRepository.findOneOrFail({ where: { id: input.fighter1_id } });
     }
     if (input.fighter2_id) {
-      await this.fighterRepository.findOneOrFail({
-        where: { id: input.fighter2_id },
-      });
+      await this.fighterRepository.findOneOrFail({ where: { id: input.fighter2_id } });
     }
     if (input.winner_id) {
-      await this.fighterRepository.findOneOrFail({
-        where: { id: input.winner_id },
-      });
+      await this.fighterRepository.findOneOrFail({ where: { id: input.winner_id } });
     }
 
     await this.fightRepository.update(id, input);
-    return this.fightRepository.findOneOrFail({
+    const updatedFight = await this.fightRepository.findOneOrFail({
       where: { id },
       relations: ['event', 'fighter1', 'fighter2', 'winner'],
     });
+
+    return this.mapToFightType(updatedFight);
   }
 
   async remove(id: number): Promise<boolean> {

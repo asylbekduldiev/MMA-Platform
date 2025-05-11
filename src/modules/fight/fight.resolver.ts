@@ -1,32 +1,32 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { FightService } from './fight.service';
-import { Fight } from '../../entities/fights.entity';
 import { CreateFightInput } from './dto/create-fight.input';
 import { UpdateFightInput } from './dto/update-fight.input';
+import { FightType } from '../../types/fight.type';
 
-@Resolver(() => Fight)
+@Resolver(() => FightType)
 export class FightResolver {
   constructor(private readonly fightService: FightService) {}
 
-  @Query(() => [Fight], { name: 'fights' })
+  @Query(() => [FightType], { name: 'fights' })
   async findAll() {
     return this.fightService.findAll();
   }
 
-  @Query(() => Fight, { name: 'fight' })
+  @Query(() => FightType, { name: 'fight' })
   async findOne(@Args('id', { type: () => Number }) id: number) {
     return this.fightService.findOne(id);
   }
 
-  @Mutation(() => Fight, { name: 'createFight' })
-  async create(@Args('input') input: CreateFightInput) {
+  @Mutation(() => FightType, { name: 'createFight' })
+  async create(@Args('input', { type: () => CreateFightInput }) input: CreateFightInput) {
     return this.fightService.create(input);
   }
 
-  @Mutation(() => Fight, { name: 'updateFight' })
+  @Mutation(() => FightType, { name: 'updateFight' })
   async update(
     @Args('id', { type: () => Number }) id: number,
-    @Args('input') input: UpdateFightInput,
+    @Args('input', { type: () => UpdateFightInput }) input: UpdateFightInput,
   ) {
     return this.fightService.update(id, input);
   }

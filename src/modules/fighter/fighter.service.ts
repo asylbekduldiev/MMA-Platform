@@ -5,6 +5,8 @@ import { Fighter } from '../../entities/fighter.entity';
 import { Fight } from '../../entities/fights.entity';
 import { CreateFighterInput } from './dto/create-fighter.input';
 import { UpdateFighterInput } from './dto/update-fighter.input';
+import { FighterType } from '../../types/fighter.type';
+import { FightType } from '../../types/fight.type';
 
 @Injectable()
 export class FighterService {
@@ -13,21 +15,24 @@ export class FighterService {
     @InjectRepository(Fight) private fightRepository: Repository<Fight>,
   ) {}
 
-  async findAll(): Promise<Fighter[]> {
-    return this.fighterRepository.find();
+  async findAll(): Promise<FighterType[]> {
+    const fighters = await this.fighterRepository.find();
+    return fighters.map(fighter => this.mapToFighterType(fighter));
   }
 
-  async findOne(id: number): Promise<Fighter> {
-    return this.fighterRepository.findOneOrFail({ where: { id } });
+  async findOne(id: number): Promise<FighterType> {
+    const fighter = await this.fighterRepository.findOneOrFail({ where: { id } });
+    return this.mapToFighterType(fighter);
   }
 
-  async findByWeightClass(weightClass: string): Promise<Fighter[]> {
-    return this.fighterRepository.find({
+  async findByWeightClass(weightClass: string): Promise<FighterType[]> {
+    const fighters = await this.fighterRepository.find({
       where: { weight_class: weightClass },
     });
+    return fighters.map(fighter => this.mapToFighterType(fighter));
   }
 
-  async create(input: CreateFighterInput): Promise<Fighter> {
+  async create(input: CreateFighterInput): Promise<FighterType> {
     const fighter = this.fighterRepository.create({
       name: input.name,
       weight_class: input.weight_class,
@@ -39,17 +44,19 @@ export class FighterService {
         submissions: 0,
       },
     });
-    return this.fighterRepository.save(fighter);
+    const savedFighter = await this.fighterRepository.save(fighter);
+    return this.mapToFighterType(savedFighter);
   }
 
-  async update(id: number, input: UpdateFighterInput): Promise<Fighter> {
+  async update(id: number, input: UpdateFighterInput): Promise<FighterType> {
     try {
       const updateData = { ...input };
       if (input.stats) {
         updateData.stats = input.stats;
       }
       await this.fighterRepository.update(id, updateData);
-      return this.fighterRepository.findOneOrFail({ where: { id } });
+      const updatedFighter = await this.fighterRepository.findOneOrFail({ where: { id } });
+      return this.mapToFighterType(updatedFighter);
     } catch (error: unknown) {
       if (error instanceof Error) {
         throw new Error(`"Something went wrong"`);
@@ -63,17 +70,45 @@ export class FighterService {
     return !!result.affected;
   }
 
-  async getStats(id: number): Promise<Fighter> {
-    return this.fighterRepository.findOneOrFail({
+  async getStats(id: number): Promise<FighterType> {
+    const fighter = await this.fighterRepository.findOneOrFail({
       where: { id },
-      select: ['id', 'name', 'stats'],
+      select: ['id', 'name', 'stats', 'weight_class'],
     });
+    return this.mapToFighterType(fighter);
   }
 
-  async getFightHistory(id: number): Promise<Fight[]> {
-    return this.fightRepository.find({
+  async getFightHistory(id: number): Promise<FightType[]> {
+    const fights = await this.fightRepository.find({
       where: [{ fighter1: { id } }, { fighter2: { id } }],
-      relations: ['event'],
+      relations: ['event', 'fighter1', 'fighter2', 'winner'],
     });
+    return fights.map(fight => this.mapToFightType(fight));
+  }
+
+  private mapToFighterType(fighter: Fighter): FighterType {
+    return {
+      id: fighter.id,
+      name: fighter.name,
+      weight_class: fighter.weight_class,
+      stats: {
+        wins: fighter.stats?.wins || 0,
+        losses: fighter.stats?.losses || 0,
+        draws: fighter.stats?.draws || 0,
+        knockouts: fighter.stats?.knockouts || 0,
+        submissions: fighter.stats?.submissions || 0
+      }
+    };
+  }
+
+  private mapToFightType(fight: Fight): FightType {
+    return {
+      id: fight.id,
+      event_id: fight.event?.id,
+      fighter1_id: fight.fighter1?.id,
+      fighter2_id: fight.fighter2?.id,
+      winner_id: fight.winner?.id,
+      result_method: fight.result_method
+    };
   }
 }
